@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
-from schemas.script_shema import ScriptRequest
-from services.ai.ai_services import generate_script
+from backend.app.schemas.script_shema import ScriptRequest
+from backend.app.services.ai.ai_services import generate_script
 
 router = APIRouter()
 

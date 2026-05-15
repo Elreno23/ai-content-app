@@ -1,5 +1,5 @@
-from services.ai.providers.ollama_provider import OllamaProvider
-from services.ai.providers.openai_provider import OpenIAProvider
+from backend.app.services.ai.providers.ollama_provider import OllamaProvider
+from backend.app.services.ai.providers.openai_provider import OpenIAProvider
 import os
 
 provider_name = os.getenv("AI_PROVIDER","ollama")
