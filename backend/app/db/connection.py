@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from backend.app.models.simulation import Simulation
-from backend.app.db.base import Base
+from db.base import Base
 
 DATABASE_URL = "postgresql+asyncpg://postgres:LL.mamA.@localhost:5432/simulation_db"
 

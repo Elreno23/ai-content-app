@@ -1,6 +1,6 @@
-from backend.app.services.ai.base_ai import BaseAIProvider
+from services.ai.base_ai import BaseAIProvider
 import httpx
-from backend.app.schemas.parsers.llm_parser import LlmResponse 
+from schemas.parsers.llm_parser import LlmResponse 
 
 MODEL_NAME = "llama3"
 
@@ -8,7 +8,7 @@ class OllamaProvider(BaseAIProvider):
     async def generate_script(self, topic):
 
         url = "http://127.0.0.1:11434/api/chat"
-        prompt = """
+        prompt = f"""
 Eres un generador narrativo. Tu única tarea es producir una salida en formato JSON ESTRICTO.
 
 REGLAS:
@@ -16,36 +16,39 @@ REGLAS:
 - No añadas explicaciones, comentarios ni texto antes o después.
 - El JSON debe tener exactamente estos campos:
 
-{
+{{
   "narrative": "string",
   "detected_actions": [
-    {
+    {{
       "type": "USER_ARRIVED_LATE" | "USER_LIED" | "USER_HELPED" | "USER_IGNORED",
       "target": "string o null"
-    }
+    }}
   ]
-}
+}}
 
 - La narrativa debe ser texto libre.
 - Las acciones deben pertenecer SOLO a la taxonomía permitida.
 - Si no puedes generar un JSON válido, devuelve exactamente:
-  {"error":"UNABLE_TO_GENERATE_JSON"}
+  {{"error":"UNABLE_TO_GENERATE_JSON"}}
 
 EJEMPLO VÁLIDO:
-{
+{{
   "narrative": "María llegó tarde a la reunión y todos la miraron en silencio.",
   "detected_actions": [
-    {
+    {{
       "type": "USER_ARRIVED_LATE",
       "target": "María"
-    }
+    }}
   ]
-}
+}}
 
 EJEMPLO DE ERROR:
-{"error":"UNABLE_TO_GENERATE_JSON"}
+{{"error":"UNABLE_TO_GENERATE_JSON"}}
 
 Ahora genera la salida JSON siguiendo estas reglas.
+
+TEMA:
+"{topic}"
 """
 
         payload = {
