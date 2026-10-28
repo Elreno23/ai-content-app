@@ -1,17 +1,17 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List
+from enum import Enum
 
-ActionType = Literal[
-    "USER_ARRIVED-LATE",
-    "USER_LIED",
-    "USER_HELPED",
-    "USER_IGNORED"
-]
+class ActionType(str,Enum):
+    USER_ARRIVED_LATE="USER_ARRIVED_LATE",
+    USER_LIED="USER_LIED",
+    USER_HELPED="USER_HELPED",
+    USER_IGNORED="USER_IGNORED"
 
-class DetectedAction(BaseModel):
+class DetectedActions(BaseModel):
     type: ActionType
-    target:Optional[str] = None
+    target: str | None = None
 
 class LlmResponse(BaseModel):
-    narrative: str
-    detected_actions: List[DetectedAction] = Field(default_factory=list)
+    narrative:str
+    detected_actions: List[DetectedActions] = Field(default_factory=List)
