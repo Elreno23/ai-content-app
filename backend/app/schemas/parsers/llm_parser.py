@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 class ActionType(str,Enum):
@@ -14,4 +13,11 @@ class DetectedActions(BaseModel):
 
 class LlmResponse(BaseModel):
     narrative:str
-    detected_actions: List[DetectedActions] = Field(default_factory=List)
+    detected_actions: list[DetectedActions] = Field(default_factory=list)
+
+class NarrativeContext(BaseModel):
+    episode_number:int
+    text:str
+    detected_actions: list[DetectedActions] = Field(default_factory=list)
+    
+    model_config = ConfigDict(from_attributes=True)

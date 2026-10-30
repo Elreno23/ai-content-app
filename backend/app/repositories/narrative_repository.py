@@ -2,6 +2,7 @@ from sqlalchemy import select, func
 from app.models.narrative import Narrative
 from app.models.detected_action import DetectedAction
 from app.repositories.base_repository import BaseNarrativeRepository
+from sqlalchemy.orm import selectinload
 
 class NarrativeRepository(BaseNarrativeRepository):
     def __init__(self, db):
@@ -38,7 +39,7 @@ class NarrativeRepository(BaseNarrativeRepository):
         return last + 1
 
     async def get_recent_episode(self, limit):
-        recents_episodes = select(Narrative).order_by(Narrative.episode_number.desc()).limit(limit)
+        recents_episodes = select(Narrative).options(selectinload(Narrative.actions_relationship)).order_by(Narrative.episode_number.desc()).limit(limit)
         result = (await self.db.scalars(recents_episodes)).all()
         return result
 
