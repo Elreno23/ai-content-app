@@ -11,6 +11,8 @@ class DetectedActions(BaseModel):
     type: ActionType
     target: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class LlmResponse(BaseModel):
     narrative:str
     detected_actions: list[DetectedActions] = Field(default_factory=list)
@@ -18,6 +20,6 @@ class LlmResponse(BaseModel):
 class NarrativeContext(BaseModel):
     episode_number:int
     text:str
-    detected_actions: list[DetectedActions] = Field(default_factory=list)
+    actions_relationship: list[DetectedActions] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)

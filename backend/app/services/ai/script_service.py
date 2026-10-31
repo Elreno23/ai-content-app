@@ -16,20 +16,28 @@ class ScriptService:
         if last_episode == 0 and not topic:
             raise ValueError("Se requiere un tema (topic) para iniciar el primer episodio de la serie.")
 
-        if last_episode == 0:
-            prompt_topic = topic
+        recent_episodes = await self.narrative_repo.get_recent_episode(limit=10)
+        chronological_episodes = recent_episodes[::-1]
+        context_episodes = self.format_context(chronological_episodes)
 
-        else:
-            recent_episodes = await self.narrative_repo.get_recent_episode(limit=10)
-            chronological_episodes = recent_episodes[::-1]
-            context_episodes = self.format_context(chronological_episodes)
-            prompt = f"""Eres un generador narrativo. Tu única tarea es producir una salida en formato JSON ESTRICTO.
+        if topic == "string":
+            topic = None
 
-REGLAS:
+        prompt_topic = f"\n---\nSITUACIÓN ACTUAL \ ENTRADA ACTUAL:\n{topic}\n---\n" if topic else ""
+        prompt = f"""Eres un generador narrativo. Tu única tarea es producir una salida en formato JSON ESTRICTO.
+
+
+{context_episodes}
+
+{prompt_topic}
+
+REGLAS DE CONTINUIDAD:
+- La nueva "narrative" DEBE continuar la historia exactamente donde se quedó el último episodio del historial.
+- No repitas eventos pasados, pero mantén la coherencia con lo que ya ocurrió y las acciones detectadas previamente.
+
+REGLAS DE FORMATO:
 - Devuelve SOLO JSON. Nada de texto fuera del JSON.
-- No añadas explicaciones, comentarios ni texto antes o después.
 - El JSON debe tener exactamente estos campos:
-
 {{
     "narrative": "string",
     "detected_actions": [
@@ -40,36 +48,17 @@ REGLAS:
     ]
 }}
 
-- La narrativa debe ser texto libre.
-- Las acciones deben pertenecer SOLO a la taxonomía permitida.
-- Si no puedes generar un JSON válido, devuelve exactamente:
-    {{"error":"UNABLE_TO_GENERATE_JSON"}}
-
-EJEMPLO VÁLIDO:
-{{
-    "narrative": "María llegó tarde a la reunión y todos la miraron en silencio.",
-    "detected_actions": [
-        {{
-            "type": "USER_ARRIVED_LATE",
-            "target": "María"
-        }}
-    ]
-}}
-
-EJEMPLO DE ERROR:
-{{"error":"UNABLE_TO_GENERATE_JSON"}}
-
-{context_episodes}
-
-TEMA O ENTRADA ACTUAL:
-"{prompt_topic}"
-
 Ahora genera la salida JSON siguiendo estas reglas."""
-            
+        
+        print(f"QUE ESTAMOS PASANDO EN EL PROMPT {prompt_topic}")
+        print(f"QUE ESTAMOS PASANDO EN EL PROMPT {prompt}")
         parsed = await self.llm_provider.generate_script(prompt)
         actions = [a.model_dump() for a in parsed.detected_actions]
         next_episode = await self.narrative_repo.get_next_episode_number()
 
+        print(f"que estamos pasando {parsed}")
+        print(f"que acciones hay {actions}")
+        print(f"siguiente episodio {next_episode}")
         narrative = await self.narrative_repo.save_narrative_with_actions(
             episode_number = next_episode,
             text=parsed.narrative,
@@ -80,16 +69,17 @@ Ahora genera la salida JSON siguiendo estas reglas."""
 
     def format_context(self, episodes:list) -> str:
         if not episodes:
-            return "--- Nota: Este es el inicio de la historia. No hay episodios anteriores. ---"
+            return " "
         
         narrative_context = [NarrativeContext.model_validate(ep) for ep in episodes]
+        print(f"ESTO QUE EEEEEH? {narrative_context}")
         narrative_serialize = [narrative.model_dump() for narrative in narrative_context]
-
+        print(f"QUE HAY AQUIII? {narrative_serialize}")
         history_summary = "\n".join(
         f"[Episodio: {ep['episode_number']}]\n"
         f"Narrativa: {ep['text']}\n"
-        f"Acciones previas: {', '.join([a['target'] for a in ep['detected_actions'] if a['target']])}"
+        f"Acciones previas: {', '.join((a['type'] + (' (' + a['target'] + ')' if a['target'] else '') for a in ep['actions_relationship']))}"
         for ep in narrative_serialize)
 
-        return f"\n---\nHISTORIAL DE EPISODIOS ANTERIORES:\n{history_summary}\n---"
+        return f"\n---\n###HISTORIAL DE EPISODIOS ANTERIORES (Usa esto para mantener una continuidad estricta):\n{history_summary}\n---"
 
