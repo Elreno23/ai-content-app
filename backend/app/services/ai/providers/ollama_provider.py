@@ -2,13 +2,14 @@ from app.schemas.parsers.llm_parser import LlmResponse
 from app.services.ai.base_ai import BaseAIProvider
 import httpx
 
-MODEL_NAME = "llama3"
+MODEL_NAME = "dolphin-llama3"
 class OllamaProvider(BaseAIProvider):
     async def generate_script(self,prompt):
         url = "http://127.0.0.1:11434/api/chat"
 
         playload = {"model":MODEL_NAME,
                     "messages":[{"role":"user","content":prompt}],
+                    "format": "json",
                     "stream": False}
         try:
             async with httpx.AsyncClient(timeout=500) as client:
@@ -32,9 +33,9 @@ class OllamaProvider(BaseAIProvider):
                     return parsed
                 
                 except Exception as e:
-                    return {"error": "INVALID_JSON_FROM_LLM",
-                            "details": str(e),
-                            "raw": raw_json}
+                    print("Pydantic falló al validar el JSON de Ollama:", e)
+                    print("Texto crudo que mandó el LLM:", raw_json)
+                    raise e
                 
         except httpx.ConnectError:
             return "Error: No se pudo conectar con Ollama. ¿Está el servidor levantado?"
@@ -42,7 +43,6 @@ class OllamaProvider(BaseAIProvider):
             return "Error: Ollama tardó demasiado en responder."
         except httpx.Timeout:
             return "Error: Ollama tardó demasiado en responder."
-                
         except Exception as e:
             return f"Error inesperado en el proveedor Ollama: {str(e)}"
 

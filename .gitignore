@@ -1,3 +1,51 @@
+# Entorno virtual
+backend/venv311/
 venv/
+.env
+.env.*
+
+# Python cache
 __pycache__/
-.env/
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.swp
+*.swo
+
+# SQLite (si algún día lo usas para tests)
+*.sqlite3
+*.db
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# Compilados
+*.so
+
+# Carpeta dist o build (si algún día empaquetas)
+dist/
+build/
+
+# Node (si agregas frontend dentro del repo)
+node_modules/
+
+# Alembic: NO ignorar migrations, pero sí ignorar archivos temporales
+alembic/versions/__pycache__/
