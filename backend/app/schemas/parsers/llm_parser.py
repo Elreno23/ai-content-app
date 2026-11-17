@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 class VisualMetadataContext(BaseModel):
     character:str
@@ -7,6 +7,14 @@ class VisualMetadataContext(BaseModel):
     props_hand:str | None = None
     environment:str
     camera_lighting:str
+
+    @field_validator("props_hand", mode="before")
+    @classmethod
+    def clean_null_string(cls,v:object) -> object:
+        if isinstance(v, str) and v.strip().lower() in ("none","null","n/a","na"):
+            return None
+        return v
+
 
 class LlmResponse(BaseModel):
     narrative:str

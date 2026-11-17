@@ -1,13 +1,15 @@
 from app.services.ai.providers.ollama_provider import OllamaProvider
 from app.repositories.narrative_repository import NarrativeRepository
+from app.services.ai.visual_bridge import VisualBridge
 from app.models.narrative import Narrative
 
 
 
 class ScriptService:
-    def __init__(self, llm_provider: OllamaProvider, narrative_repo: NarrativeRepository):
+    def __init__(self, llm_provider: OllamaProvider, narrative_repo: NarrativeRepository, visual_bridge:VisualBridge):
         self.llm_provider = llm_provider
         self.narrative_repo = narrative_repo
+        self.visual_bridge = visual_bridge
         
     async def generate_script(self, topic:str | None = None) -> Narrative:
         last_episode = await self.narrative_repo.get_latest_episode_number()
@@ -21,15 +23,16 @@ class ScriptService:
         context_episodes =  await self.get_prompt_context()
         prompt = self.build_prompt(context_episodes, topic)
         parsed = await self.llm_provider.generate_script(prompt)
-        print(f"QUE PASA AQUI????????{parsed}")
         next_episode = await self.narrative_repo.get_next_episode_number()
         payload_data = parsed.model_dump()
-        print(f"QUE COÑO ES {payload_data}")
         narrative = await self.narrative_repo.save_narrative_with_actions(
             episode_number=next_episode,
             payload=payload_data
         )
-        return narrative
+        visual_data = narrative.payload["visual_metadata"]
+        self.visual_bridge.process_visuals(visual_data)
+
+        return None
 
     async def get_prompt_context(self):
         history_text = ""
@@ -42,7 +45,6 @@ class ScriptService:
                 f"Acciones previas: {', '.join(a for a in ep.payload['detected_actions'])}"
                 for ep in chronological_episodes
             )   
-            print(f"HOLAAAA {history_summary}")
             history_text = f"\n---\n###HISTORIAL DE EPISODIOS ANTERIORES:\n{history_summary}\n---"
             last_ep = recent_episodes[0]
 
@@ -64,7 +66,6 @@ class ScriptService:
         """
         else:
             visual_anchor_text = ("\n---\nESTADO VISUAL: Inicio de la serie (Primer fotograma).\n---\n")
-        print(f"QLQQQQQQ: {visual_anchor_text}")
         return {"history_text": history_text,
                 "visual_anchor_text": visual_anchor_text}
 
