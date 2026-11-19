@@ -1,6 +1,9 @@
 # Entorno virtual
 backend/venv311/
 venv/
+backend/app/services/comfy/venv_comfy
+
+# Archivos de entorno y secretos
 .env
 .env.*
 

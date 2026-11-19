@@ -1,12 +1,12 @@
 from app.services.ai.providers.ollama_provider import OllamaProvider
 from app.repositories.narrative_repository import NarrativeRepository
-from app.services.ai.visual_bridge import VisualBridge
+from app.services.ai.visual_bridge import ComfyUIBridge
 from app.models.narrative import Narrative
 
 
 
 class ScriptService:
-    def __init__(self, llm_provider: OllamaProvider, narrative_repo: NarrativeRepository, visual_bridge:VisualBridge):
+    def __init__(self, llm_provider: OllamaProvider, narrative_repo: NarrativeRepository, visual_bridge:ComfyUIBridge):
         self.llm_provider = llm_provider
         self.narrative_repo = narrative_repo
         self.visual_bridge = visual_bridge
@@ -30,9 +30,9 @@ class ScriptService:
             payload=payload_data
         )
         visual_data = narrative.payload["visual_metadata"]
-        self.visual_bridge.process_visuals(visual_data)
+        prompt_id = await self.visual_bridge.send_prompt_text_encoders(visual_data)
 
-        return None
+        return prompt_id
 
     async def get_prompt_context(self):
         history_text = ""

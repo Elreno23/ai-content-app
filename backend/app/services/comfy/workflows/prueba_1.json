@@ -1,0 +1,44 @@
+{
+  "75": {
+    "inputs": {
+      "source": [
+        "77",
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "76": {
+    "inputs": {
+      "clip_name": "model.safetensors",
+      "type": "stable_diffusion",
+      "device": "cpu"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "77": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  }
+}
