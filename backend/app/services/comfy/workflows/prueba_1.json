@@ -1,18 +1,4 @@
 {
-  "75": {
-    "inputs": {
-      "source": [
-        "77",
-        0
-      ]
-    },
-    "class_type": "PreviewAny",
-    "_meta": {
-      "title": "Preview as Text",
-      "cnr_id": "comfy-core",
-      "ver": "0.45.0"
-    }
-  },
   "76": {
     "inputs": {
       "clip_name": "model.safetensors",
@@ -28,15 +14,150 @@
   },
   "77": {
     "inputs": {
-      "text": "",
+      "text": "stick, wooden stick, tree branch, vertical line, realistic, 3d, detailed anatomy, shading, gradient, complex background, blurry, messy lines, low quality, text, watermark",
       "clip": [
-        "76",
-        0
+        "91",
+        1
       ]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
       "title": "CLIP Text Encode (Prompt)",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "80": {
+    "inputs": {
+      "unet_name": "stable-diffusion-v1-5-pruned-emaonly-Q4_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)",
+      "cnr_id": "comfyui-gguf",
+      "ver": "1.1.10"
+    }
+  },
+  "82": {
+    "inputs": {
+      "seed": 63010437676309,
+      "steps": 20,
+      "cfg": 7,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "91",
+        0
+      ],
+      "positive": [
+        "88",
+        0
+      ],
+      "negative": [
+        "77",
+        0
+      ],
+      "latent_image": [
+        "84",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "83": {
+    "inputs": {
+      "vae_name": "diffusion_pytorch_model (1).safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "84": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "85": {
+    "inputs": {
+      "samples": [
+        "82",
+        0
+      ],
+      "vae": [
+        "83",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "87": {
+    "inputs": {
+      "images": [
+        "85",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "88": {
+    "inputs": {
+      "text": "(full body stick figure:1.4), standing, simple black stickman drawing, minimalist line art, solid white background, wide shot, centered, (lots of empty white space around:1.2)",
+      "clip": [
+        "91",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.0"
+    }
+  },
+  "91": {
+    "inputs": {
+      "lora_name": "Japanese_style_Minimalist_Line_Illustrations.safetensors",
+      "strength_model": 0.9,
+      "strength_clip": 0.9,
+      "model": [
+        "80",
+        0
+      ],
+      "clip": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)",
       "cnr_id": "comfy-core",
       "ver": "0.45.0"
     }

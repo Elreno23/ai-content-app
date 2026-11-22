@@ -1,3 +1,4 @@
+from app.core.exceptions import NarrativeStateError
 from app.services.ai.providers.ollama_provider import OllamaProvider
 from app.repositories.narrative_repository import NarrativeRepository
 from app.services.ai.visual_bridge import ComfyUIBridge
@@ -15,7 +16,9 @@ class ScriptService:
         last_episode = await self.narrative_repo.get_latest_episode_number()
 
         if last_episode == 0 and not topic:
-            raise ValueError("Se requiere un tema (topic) para iniciar el primer episodio de la serie.")
+            raise NarrativeStateError(
+                "Se requiere un tema (topic) para iniciar el primer episodio de la serie."
+            )
 
         if topic == "string":
             topic = None
@@ -30,7 +33,7 @@ class ScriptService:
             payload=payload_data
         )
         visual_data = narrative.payload["visual_metadata"]
-        prompt_id = await self.visual_bridge.send_prompt_text_encoders(visual_data)
+        prompt_id = await self.visual_bridge.submit_prompt(visual_data)
 
         return prompt_id
 
