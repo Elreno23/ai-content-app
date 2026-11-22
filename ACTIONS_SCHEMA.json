@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-content/actions_schema.json",
+  "title": "Propuestas de acontecimientos del LLM (propose_validate)",
+  "description": "Contrato de salida del LLM para propuestas estructuradas de acontecimientos, que el backend valida antes de persistir (decision aprobada: propose_validate). ESTADO: diseno aprobado en su estructura general; la taxonomia de tipos y el mecanismo de referencia a personajes estan PENDIENTES de aprobacion (ver campo 'x_pending_decisions'). Este schema NO es implementado todavia (H3 no ha sido ejecutado).",
+  "type": "object",
+  "required": ["proposals"],
+  "properties": {
+    "proposals": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Conjunto de acontecimientos que el LLM propone registrar tras el desarrollo de un capitulo. El backend valida cada propuesta de forma independiente; una propuesta invalida se rechaza sin invalidar necesariamente el resto (semaforica de rechazo parcial PENDIENTE de aprobacion).",
+      "items": { "$ref": "#/$defs/eventProposal" }
+    }
+  },
+  "$defs": {
+    "eventProposal": {
+      "type": "object",
+      "required": ["type", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Tipo de acontecimiento. PENDIENTE: la taxonomia (enum cerrado o convencion de nomenclatura) no ha sido aprobada. Mientras tanto se acepta cualquier string no vacio y el backend registrara el valor sin validar contra un enum.",
+          "examples": ["CHARACTER_ACTION", "RELATIONSHIP_CHANGE", "OBJECT_INTRODUCED", "LOCATION_CHANGE"]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Descripcion del acontecimiento en lenguaje natural estructurado: que ocurrio, en tiempo pasado, de forma verificable contra el texto narrativo del capitulo."
+        },
+        "characters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Personajes implicados. PENDIENTE: el mecanismo de referencia (por nombre del personaje o por identificador de entidad) no ha sido aprobado. El backend validara contra el conjunto de personajes existentes cuando el mecanismo este definido; mientras tanto la validacion sera de no-vacio si el campo esta presente."
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Ubicacion donde ocurre el acontecimiento, si aplica. PENDIENTE: mismo mecanismo de referencia que 'characters'."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Contexto adicional no estructurado para auditoria humana. No se usa para continuidad automatica."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "x_pending_decisions": {
+    "summary": "Decisiones abiertas documentadas en STATE_MODEL.md y ENGINE_RULES.md. No inventar soluciones: permanecen abiertas hasta aprobacion.",
+    "pending": [
+      "Taxonomia cerrada de 'type' (enum de tipos de acontecimiento) y su gobernanza.",
+      "Mecanismo de referencia a personajes y ubicaciones: nombre vs. identificador de entidad.",
+      "Semantica de rechazo: rechazo total del conjunto vs. rechazo parcial por propuesta.",
+      "Si el LLM puede proponer la CREACION de personajes/ubicaciones nuevos o solo referenciar existentes.",
+      "Campos de estado resultante (delta) que el backend derivaria para el WorldStateSnapshot."
+    ]
+  },
+  "x_current_state_note": "El contrato ACTUAL del LLM (implementado) es el schema Pydantic LlmResponse en backend/app/schemas/parsers/llm_parser.py: narrative (str), detected_actions (list[str]), visual_metadata (objeto). detected_actions es texto plano sin estructura ni validacion semantica; este schema lo sustituira como parte de H3. La relacion entre ambos se resuelve durante la implementacion de WorldStateService (PENDIENTE)."
+}
