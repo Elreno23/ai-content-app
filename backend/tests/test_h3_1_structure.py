@@ -202,7 +202,8 @@ def test_create_and_get_chapter(fresh):
             fetched = await chapters.get(chapter.id)
             assert fetched is not None
             assert fetched.season_id == season.id
-            assert fetched.status == "planned"
+            assert fetched.narrative_status == "planned"
+            assert fetched.visual_status == "not_started"
             assert fetched.title == "Piloto"
             assert fetched.logline == "Juan cae"
     run(body())
@@ -221,12 +222,12 @@ def test_list_by_season_and_status(fresh):
             c2 = await chapters.create(s1.id, 2, logline="b")
             await chapters.create(s2.id, 1, logline="c")
             await session.commit()
-            await chapters.update_status(c2.id, "drafting")
+            await chapters.update_narrative_status(c2.id, "drafting")
             await session.commit()
             assert [c.number for c in await chapters.list_by_season(s1.id)] == [1, 2]
-            draft = await chapters.list_by_status("drafting")
+            draft = await chapters.list_by_narrative_status("drafting")
             assert [c.id for c in draft] == [c2.id]
-            assert await chapters.list_by_status("visualizing") == []
+            assert await chapters.list_by_narrative_status("visualizing") == []
     run(body())
 
 

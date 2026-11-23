@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from fastapi import Request
 
 from app.core.exceptions import (
     ComfyUIConnectionError,
@@ -11,39 +11,41 @@ from app.core.exceptions import (
     LLMTimeoutError,
     NarrativeStateError,
 )
-from app.dependencies import get_script_service
+from app.main import (
+    comfy_connection_error_handler,
+    comfy_response_error_handler,
+    comfy_timeout_error_handler,
+    comfy_workflow_error_handler,
+    llm_connection_error_handler,
+    llm_response_error_handler,
+    llm_timeout_error_handler,
+    narrative_state_error_handler,
+)
 
 EXPECTED = [
-    (LLMConnectionError, 503),
-    (LLMTimeoutError, 504),
-    (LLMResponseError, 502),
-    (ComfyUIConnectionError, 503),
-    (ComfyUITimeoutError, 504),
-    (ComfyUIResponseError, 502),
-    (ComfyUIWorkflowError, 500),
-    (NarrativeStateError, 422),
+    (llm_connection_error_handler, LLMConnectionError, 503),
+    (llm_timeout_error_handler, LLMTimeoutError, 504),
+    (llm_response_error_handler, LLMResponseError, 502),
+    (comfy_connection_error_handler, ComfyUIConnectionError, 503),
+    (comfy_timeout_error_handler, ComfyUITimeoutError, 504),
+    (comfy_response_error_handler, ComfyUIResponseError, 502),
+    (comfy_workflow_error_handler, ComfyUIWorkflowError, 500),
+    (narrative_state_error_handler, NarrativeStateError, 422),
 ]
 
 
-class StubService:
-    def __init__(self, exc):
-        self.exc = exc
-
-    async def generate_script(self, topic=None):
-        raise self.exc("fallo simulado")
+def make_request():
+    scope = {"type": "http", "method": "POST", "path": "/x", "headers": []}
+    return Request(scope)
 
 
-@pytest.mark.parametrize("exc,expected_status", EXPECTED)
-def test_error_handlers(exc, expected_status):
-    from app.main import app
+@pytest.mark.parametrize("handler,exc,expected_status", EXPECTED)
+def test_error_handler_translation(handler, exc, expected_status):
+    import asyncio
+    import json
 
-    app.dependency_overrides[get_script_service] = lambda: StubService(exc)
-    try:
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.post("/generate-script", json={"topic": "x"})
-        assert response.status_code == expected_status
-        body = response.json()
-        assert body["detail"] == "fallo simulado"
-        assert "raw_detail" not in body
-    finally:
-        app.dependency_overrides.clear()
+    response = asyncio.run(handler(make_request(), exc("fallo simulado")))
+    assert response.status_code == expected_status
+    body = json.loads(response.body)
+    assert body["detail"] == "fallo simulado"
+    assert "raw_detail" not in body

@@ -1,9 +1,7 @@
-from app.schemas.parsers.llm_parser import LlmResponse
+from app.schemas.parsers.chapter_parser import ChapterStructure
 from app.services.ai.base_ai import BaseAIProvider
-
-MODEL_NAME = ""
 
 
 class OpenIAProvider(BaseAIProvider):
-    async def generate_script(self, prompt: str) -> LlmResponse:
+    async def generate_chapter_structure(self, prompt: str) -> ChapterStructure:
         raise NotImplementedError

@@ -36,5 +36,5 @@ class Season(Base):
 
     series: Mapped["Series"] = relationship(back_populates="seasons", lazy="selectin")
     chapters: Mapped[list["Chapter"]] = relationship(
-        back_populates="season", lazy="selectin", passive_deletes=True
+        back_populates="season", lazy="selectin", passive_deletes="all"
     )

@@ -26,7 +26,11 @@ class BaseChapterRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def list_by_status(self, status: str) -> list[Chapter]:
+    async def list_by_narrative_status(self, status: str) -> list[Chapter]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def list_by_visual_status(self, status: str) -> list[Chapter]:
         raise NotImplementedError
 
     @abstractmethod
@@ -34,7 +38,11 @@ class BaseChapterRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update_status(self, chapter_id: int, status: str) -> Chapter | None:
+    async def update_narrative_status(self, chapter_id: int, status: str) -> Chapter | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update_visual_status(self, chapter_id: int, status: str) -> Chapter | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -76,9 +84,19 @@ class ChapterRepository(BaseChapterRepository):
         )
         return list(result)
 
-    async def list_by_status(self, status: str) -> list[Chapter]:
+    async def list_by_narrative_status(self, status: str) -> list[Chapter]:
         result = await self.db.scalars(
-            select(Chapter).where(Chapter.status == status).order_by(Chapter.id)
+            select(Chapter)
+            .where(Chapter.narrative_status == status)
+            .order_by(Chapter.id)
+        )
+        return list(result)
+
+    async def list_by_visual_status(self, status: str) -> list[Chapter]:
+        result = await self.db.scalars(
+            select(Chapter)
+            .where(Chapter.visual_status == status)
+            .order_by(Chapter.id)
         )
         return list(result)
 
@@ -88,11 +106,19 @@ class ChapterRepository(BaseChapterRepository):
         )
         return (current or 0) + 1
 
-    async def update_status(self, chapter_id: int, status: str) -> Chapter | None:
+    async def update_narrative_status(self, chapter_id: int, status: str) -> Chapter | None:
         chapter = await self.get(chapter_id)
         if chapter is None:
             return None
-        chapter.status = status
+        chapter.narrative_status = status
+        await self.db.flush()
+        return chapter
+
+    async def update_visual_status(self, chapter_id: int, status: str) -> Chapter | None:
+        chapter = await self.get(chapter_id)
+        if chapter is None:
+            return None
+        chapter.visual_status = status
         await self.db.flush()
         return chapter
 

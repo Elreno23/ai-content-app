@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-content/chapter_schema.json",
+  "title": "Estructura de capitulo desarrollado por el LLM (H3.2)",
+  "description": "Contrato de salida del LLM para el desarrollo de un capitulo completo en UNA llamada (decision aprobada). Validador ejecutable: backend/app/schemas/parsers/chapter_parser.py (Pydantic, extra=forbid). Reglas aprobadas: entre 4 y 6 escenas por capitulo; entre 2 y 5 beats por escena; numeracion consecutiva de escenas y beats comenzando en 1; una llamada al LLM por capitulo; aprobacion humana a nivel de capitulo completo.",
+  "type": "object",
+  "required": ["chapter"],
+  "additionalProperties": false,
+  "properties": {
+    "chapter": { "$ref": "#/$defs/chapterStructure" }
+  },
+  "$defs": {
+    "chapterStructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "scenes"],
+      "properties": {
+        "title": { "type": ["string", "null"], "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "scenes": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/sceneStructure" }
+        }
+      }
+    },
+    "sceneStructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "summary", "beats"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1, "x_rule": "consecutivo desde 1 (validado por el backend)" },
+        "title": { "type": ["string", "null"], "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 10, "maxLength": 1000 },
+        "beats": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/beatStructure" }
+        }
+      }
+    },
+    "beatStructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "content"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1, "x_rule": "consecutivo desde 1 dentro de la escena (validado por el backend)" },
+        "content": { "type": "string", "minLength": 20, "maxLength": 2000 }
+      }
+    }
+  },
+  "x_generation_config": {
+    "model": "qwen-local (verificado: Qwen3.5-9B-Q4_K_M, base Qwen/Qwen3.5-9B, cuantizado por Unsloth)",
+    "options": { "think": false, "num_ctx": 8192, "num_predict": 4096, "temperature": 0.7 },
+    "calls_per_chapter": 1,
+    "evidence": "Experimento de evaluacion: 4/4 runs validos con esta configuracion"
+  },
+  "x_pending_decisions": {
+    "pending": [
+      "Re-apertura de capitulos aprobados (P6-b)",
+      "Revision individual por escena/beat (aplazada por decision)",
+      "Regeneracion parcial (aplazada por decision)",
+      "Propuestas de acontecimientos dentro del capitulo (H3.3, ver ACTIONS_SCHEMA.json)"
+    ]
+  },
+  "x_current_state_note": "El validador ejecutable y fuente unica de los limites es chapter_parser.py (MIN_SCENES/MAX_SCENES/MIN_BEATS_PER_SCENE/MAX_BEATS_PER_SCENE); el prompt de ChapterService importa esas mismas constantes para evitar divergencia."
+}
