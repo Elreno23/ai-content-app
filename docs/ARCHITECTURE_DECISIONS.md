@@ -367,3 +367,130 @@ en su sección (p. ej., la elección de `back_populates` frente a `backref`, §3
   simultáneos, dos lecturas del max pueden colisionar; la UNIQUE lo detecta como
   `IntegrityError`, pero la política de reintento no está definida. Registrada aquí como
   limitación conocida del patrón heredado.
+
+---
+
+## 11. Decisiones de H3.2 (ejecutadas)
+
+### 11.1 Dos ejes de estado en `chapters` (resuelve P6) [APROBADA]
+
+**Decisión.** `status` única sustituida por `narrative_status` y `visual_status`
+(CHECK de BD por eje, índice sobre el narrativo). La puerta visual es
+`narrative_approved` (aprobación humana del capítulo completo).
+
+**Motivo.** La decisión `separate` exige ciclos independientes; un solo string no los
+permite. La aprobación humana añade el estado terminal narrativo.
+
+**Alternativas descartadas.** Status compuesto único (viola `separate`); re-apertura
+manual (aplazada, P6-b).
+
+**Consecuencias.** CHECKs en BD; H3.4 (visual) exigirá `narrative_approved`; los tests
+H3.1 se adaptaron a los nuevos nombres.
+
+### 11.2 Atomicidad sin clase Unit of Work (resuelve la deuda por decisión) [APROBADA]
+
+**Decisión.** No se implementa UoW propio: la unidad de trabajo es la
+`AsyncSession` — un `commit()` del servicio, `rollback()` ante excepción. Los
+repositorios siguen sin commitear.
+
+**Motivo.** Evitar sobre-arquitectura en el MVP; una sesión + commit explícito ya
+garantiza atomicidad para el flujo actual (escenas+beats+estado en un commit).
+
+**Alternativa descartada.** Clase UoW formal (se reconsiderará si aparecen
+transacciones multi-servicio).
+
+### 11.3 `passive_deletes="all"` (eleva la decisión implícita de H3.1) [APROBADA — hallazgo de H3.2]
+
+**Decisión.** Todas las colecciones padre usan `passive_deletes="all"` (antes `True`).
+
+**Motivo (evidencia empírica).** `passive_deletes=True` solo evita *cargar* la
+colección al borrar el padre, pero el UoW **sigue anulando la FK de hijos residentes
+en la sesión** (`UPDATE hijo SET fk=NULL`) — con FK NOT NULL eso es una
+`NotNullViolationError` *intermitente según el orden interno del UoW*
+(UPDATE-antes-de-DELETE vs. DELETE-primero). Reproducido con experimentos A/B en
+temp (`repro_cascade*.py`): mismo código, resultado distinto según el proceso.
+Con `"all"` el ORM nunca procesa hijos al borrar el padre: el CASCADE de BD lo hace
+siempre, de forma determinista.
+
+**Consecuencias.** Los objetos hijos residentes en la sesión quedan obsoletos tras el
+borrado del padre (stale en identity map) — los tests verifican en sesión nueva.
+Sin cambios de esquema.
+
+### 11.4 Extensión del contrato del provider: `generate_chapter_structure` [APROBADA]
+
+**Decisión.** Nuevo método abstracto en `BaseAIProvider`
+(`prompt -> ChapterStructure`), implementado en `OllamaProvider` y stub en
+`OpenIAProvider`. El pipeline de capítulos usa su propia constante de modelo
+(`CHAPTER_MODEL_NAME = "qwen-local"`) y `options` (`think: false`, `num_ctx: 8192`,
+`num_predict: 4096`) respaldadas por el experimento de evaluación (4/4 runs válidos).
+
+**Motivo.** `generate_script -> LlmResponse` es el contrato del pipeline histórico;
+el capítulo requiere otra estructura. El provider valida su dialecto y traduce
+(regla P0.1); el servicio nunca ve JSON crudo.
+
+**Hallazgo crítico documentado.** `qwen-local` es un modelo *thinking*: sin
+`think: false`, el razonamiento consume todo el presupuesto de tokens y el contenido
+llega vacío (verificado: 4096 tokens, `content=""`, `done_reason: length`).
+
+**Alternativa descartada.** HTTP directo desde el servicio (viola capas).
+
+### 11.5 Validación de capítulos con límites de producto [APROBADA]
+
+**Decisión.** `CHAPTER_SCHEMA` (contrato `chapter_parser.py`): máximo 6 escenas,
+máximo 5 beats por escena, numeración consecutiva obligatoria,
+`extra="forbid"`, longitudes acotadas; una sola llamada LLM por capítulo;
+aprobación a nivel de capítulo completo (revisión/regeneración parcial aplazadas).
+
+**Motivo.** Límites fijados por el usuario tras el experimento; el validador es el
+control de calidad sobre un modelo pequeño sin enforcement de schema.
+
+### 11.6 Un único canal HTTP con Ollama + límites mínimos unificados [APROBADA]
+
+**Decisión.** Método privado `_chat(model, prompt, options, think, timeout)` como único
+punto de comunicación HTTP: traduce transporte/protocolo a excepciones tipadas y
+retorna el contenido; la validación semántica queda en cada método público (su modelo
+Pydantic). `think` y `timeout` configurables por llamada (None = no enviar el campo).
+Los límites mínimos del capítulo (4-6 escenas, 2-5 beats) se fijaron en
+`chapter_parser.py` (MIN_*) y el prompt importa esas mismas constantes.
+
+**Motivo.** Elimina ~5 bloques duplicados de manejo HTTP entre `generate_script` y
+`generate_chapter_structure`; los mínimos del prompt y del validador eran divergentes
+(el parser aceptaba 1-3 escenas y 1 beat que el prompt prohibía) — una sola fuente de
+verdad elimina el drift.
+
+**Alternativa descartada.** Clase de cliente HTTP genérica separada (más capas para un
+único proveedor; innecesaria hoy).
+
+**Consecuencias.** `generate_script` se conserva y sigue en uso (verificado:
+`script_service.py:28` ← `/generate-script`); su `MODEL_NAME` (gemma4:12b, cambio
+manual del usuario) sigue pendiente de decisión — el modelo ya no está instalado.
+`CHAPTER_SCHEMA.json` creado como documento-contrato (faltaba del plan H3.2).
+
+### 11.7 Eliminación del pipeline histórico (generate_script + tabla narrative) [APROBADA — decisión del usuario]
+
+**Decisión.** Eliminados: ruta `/generate-script`, `ScriptService`,
+`OllamaProvider.generate_script`, `BaseAIProvider.generate_script` (la interfaz queda
+con un único método), `models/narrative.py`, `narrative_repository.py`,
+`base_repository.py`, `llm_parser.py`, `prueba_llm_parser.py`, `_chat()` (inline en
+`generate_chapter_structure`), y la tabla `narrative` (migración `0004`).
+`MODEL_NAME = "qwen-local"` único (los demás modelos olvidados por decisión del
+usuario). Backup previo de los 20 episodios en JSON temporal antes del DROP.
+
+**Motivo.** El pipeline histórico no tenía consumidores externos (cadena cerrada
+verificada por grep) y su modelo ya ni estaba instalado; mantenerlo era código muerto
+con dos contratos de provider. El usuario decide modelo único: `qwen-local`.
+
+**Consecuencias.** La cadena de migraciones conserva la historia (baseline crea
+`narrative`, `0004` la elimina — reproducible en entornos nuevos); los datos históricos
+solo existen en el backup temporal. Los tests de handlers pasan de verificarse vía
+ruta (eliminada) a invocación directa de los handlers. `BaseAIProvider` tiene un solo
+método abstracto; `OpenIAProvider` stub coherente.
+
+### 11.8 Lección: autogenerate de Alembic y metadata vacía [IMPLÍCITA]
+
+Al eliminar el último import de `app.models` (estaba acoplado al import de
+`Narrative` en `env.py`), el autogenerate detectó TODAS las tablas como eliminadas
+(metadata vacío) y habría generado una migración destructiva total. Detectado antes de
+aplicar (revisión obligatoria del autogenerate) y corregido: `env.py` importa
+explícitamente `app.models` para poblar `Base.metadata`. La revisión manual del SQL
+autogenerado es la red de seguridad que funcionó.

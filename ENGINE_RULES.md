@@ -50,18 +50,22 @@ R2.1 — **La generación de imágenes no determina el estado narrativo del cap�
 Ni a la inversa: fallar un render no "des-cierra" la narrativa; cerrar la narrativa no
 obliga a renderizar.
 
-R2.2 — Estados de ciclo de vida propuestos (**propuesta, no decisión formal**
-[PENDIENTE]):
+R2.2 — Estados aprobados (P6 resuelto en H3.2, dos ejes independientes):
 
 ```
-planned → drafting → narrative_complete → visualizing → visual_complete
-                                                    ↘ (re-apertura manual)
+Eje narrativo:    planned → drafting → narrative_complete → narrative_approved
+Eje visual:       not_started → visualizing → visual_complete
 ```
 
-`drafting` y `visualizing` pueden solaparse en el tiempo para un mismo capítulo, dado
-que los ciclos son independientes; la propuesta de arriba los ordena para legibilidad y
-deberá refinarse a un modelo de dos ejes (eje narrativo + eje visual) en la
-implementación. **[PENDIENTE]**
+La puerta de la planificación visual es `narrative_approved` (aprobación humana del
+capítulo completo — decisión aprobada en H3.2). Ambos ejes son columnas independientes
+de `chapters` con CHECK de BD.
+
+Decisión aprobada: **revisión individual por escena/beat aplazada** y **regeneración
+parcial aplazada** (la revisión y la regeneración son a nivel de capítulo completo; un
+cambio narrativo exige redesarrollar el capítulo entero mientras no se aprueben las
+variantes parciales). La re-apertura manual (`narrative_approved → drafting`) queda
+**pendiente** (P6-b).
 
 - Contraste con el estado actual [EXISTE]: hoy no hay estados de ciclo de vida.
   `ScriptService.generate_script` es una única **operación de aplicación** que, en la

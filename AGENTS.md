@@ -99,6 +99,13 @@ correcciones aplicadas durante la ejecución), actualizar `docs/ARCHITECTURE_DEC
 con su razonamiento, alternativas consideradas y consecuencias, manteniendo la
 distinción entre decisiones aprobadas, implícitas y pendientes.
 
+Al terminar cada implementación, presentar además la explicación técnica y didáctica
+con estos apartados: 1) problema que resuelve, 2) archivos implicados y su
+responsabilidad, 3) flujo de ejecución, 4) decisiones arquitectónicas (distinguiendo
+necesarias de diseño), 5) conceptos y terminología nuevos definidos, 6) ejemplo
+práctico — basada en el código real, distinguiendo lo implementado de lo previsto y
+declarando la deuda técnica.
+
 ## 8. Comunicación
 
 Sé preciso y eficiente.
