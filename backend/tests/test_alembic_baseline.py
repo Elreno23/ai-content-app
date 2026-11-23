@@ -20,20 +20,18 @@ def test_history_contains_single_baseline():
 def test_current_is_head():
     result = run_alembic(["current"])
     assert result.returncode == 0
-    assert "0002_h3_1_structure (head)" in result.stdout
+    assert "0004_drop_narrative_historical (head)" in result.stdout
 
 
 def test_upgrade_sql_matches_real_schema():
     result = run_alembic(["upgrade", "head", "--sql"])
     assert result.returncode == 0
     sql = result.stdout
+    # el baseline crea la tabla histórica y 0004 la elimina: cadena íntegra
     assert "CREATE TABLE narrative" in sql
     assert "id SERIAL NOT NULL" in sql
-    assert "episode_number INTEGER NOT NULL" in sql
-    assert "create_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL" in sql
-    assert "payload JSONB NOT NULL" in sql
-    assert "CREATE INDEX ix_narrative_id" in sql
     assert "CREATE UNIQUE INDEX ix_narrative_episode_number" in sql
+    assert "DROP TABLE narrative" in sql
 
 
 def test_history_contains_h3_1_structure():

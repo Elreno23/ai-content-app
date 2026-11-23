@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from app.models.narrative import Narrative
+import app.models  # noqa: F401  (pobla Base.metadata: imprescindible para autogenerate)
 from app.db.base import Base
 
 

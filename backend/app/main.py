@@ -11,10 +11,8 @@ from app.core.exceptions import (
     LLMTimeoutError,
     NarrativeStateError,
 )
-from app.routes.script_routes import router
 
 app = FastAPI()
-app.include_router(router)
 
 
 @app.get("/")
